@@ -1,0 +1,65 @@
+name: Android Release CI
+
+on:
+  push:
+    tags: [ v* ]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      # Setup build environment
+      - name: 'Set up JDK'
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+          distribution: 'temurin'
+      - name: 'Checkout Android keystore'
+        uses: actions/checkout@v2
+        with:
+          repository: maxelblack/keystore
+          token: ${{ secrets.KEYSTORE_TOKEN }}
+          path: keystore
+      - name: 'Fix gradlew file permission'
+        run: 'chmod +x ./gradlew'
+
+      # Build
+      - name: 'Build with Gradle'
+        run: './gradlew assembleRelease'
+
+      # Publish release
+      - name: 'Create GitHub release'
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: 'Get version tag'
+        id: get_version
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const s = process.env.GITHUB_REF;
+            return s.substring(s.indexOf("v"));
+          result-encoding: string
+      - name: 'Upload release asset'
+        id: upload_asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: app/build/outputs/apk/release/app-release.apk
+          asset_name: timecat-${{steps.get_version.outputs.result}}.apk
+          asset_content_type: application/vnd.android.package-archiv
+      - name: 'Upload production artifacts'
+        uses: actions/upload-artifact@v2
+        with:
+          name: artifacts
+          path: app/build/outputs
