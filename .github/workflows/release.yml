@@ -30,16 +30,6 @@ jobs:
         run: './gradlew assembleRelease'
 
       # Publish release
-      - name: 'Create GitHub release'
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
       - name: 'Get version tag'
         id: get_version
         uses: actions/github-script@v3
@@ -48,6 +38,16 @@ jobs:
             const s = process.env.GITHUB_REF;
             return s.substring(s.indexOf("v") + 1);
           result-encoding: string
+      - name: 'Create GitHub release'
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.result }}
+          release_name: Build ${{ steps.get_version.outputs.result }}
+          draft: false
+          prerelease: false
       - name: 'Upload release asset'
         id: upload_asset
         uses: actions/upload-release-asset@v1
