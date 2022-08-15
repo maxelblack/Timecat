@@ -15,7 +15,6 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
-          distribution: 'temurin'
       - name: 'Checkout Android keystore'
         uses: actions/checkout@v2
         with:
